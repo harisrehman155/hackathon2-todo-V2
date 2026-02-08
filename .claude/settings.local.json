@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(context7-efficient)",
+      "Bash(bash:*)",
+      "Skill(skill-creator)",
+      "Bash(python scripts/init_skill.py:*)",
+      "Bash(python3 scripts/init_skill.py:*)",
+      "Bash(python3:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote add:*)",
+      "Bash(git remote:*)",
+      "Bash(git push:*)",
+      "Bash(ssh-keygen:*)",
+      "Bash(cat:*)",
+      "Skill(fastapi-builder)",
+      "Bash(uv sync:*)",
+      "Bash(command -v:*)",
+      "Bash(curl:*)",
+      "Bash(sh)",
+      "Bash(~/.local/bin/uv sync:*)",
+      "WebSearch",
+      "WebFetch(domain:www.anthropic.com)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Skill(skill-creator-pro)",
+      "Bash(tree:*)",
+      "Skill(skill-validator)",
+      "Bash(wc:*)"
+    ]
+  }
+}
