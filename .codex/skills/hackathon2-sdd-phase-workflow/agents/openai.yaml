@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hackathon2 SDD Workflow"
+  short_description: "Enforce phased SDD gates for Hackathon 2"
+  default_prompt: "Use $hackathon2-sdd-phase-workflow to enforce Specify -> Plan -> Tasks -> Implement with phase branch gates and pytest TDD checks."

@@ -113,3 +113,32 @@
 - **SC-002**: [Measurable metric, e.g., "System handles 1000 concurrent users without degradation"]
 - **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
 - **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
+
+## Constitution Alignment *(mandatory)*
+
+### Phase Mapping
+
+- **Target Phase**: [Phase I | Phase II | Phase III | Phase IV | Phase V]
+- **Prerequisite Check**: [List required capabilities from prior phases and how this
+  feature preserves them]
+
+### Spec-Driven Execution Evidence
+
+- **Spec Source**: [Link to requirements source or decision record]
+- **Planned Sequence**: `Specify -> Plan -> Tasks -> Implement`
+- **Manual Coding Exception**: [MUST be `None` for scoped feature implementation]
+
+### Traceability Commitments
+
+- [ ] Every functional requirement maps to at least one planned task.
+- [ ] Every user story has at least one validation method (automated test or
+      scripted acceptance check).
+- [ ] Submission evidence needed for this scope is listed (repo/demo/deploy links
+      when applicable).
+
+### Test-Driven Development Commitments
+
+- [ ] Python behavior changes include tests authored first using `pytest`.
+- [ ] Test cases are expected to fail before implementation (Red), then pass after
+      implementation (Green), with cleanup/refinement noted (Refactor).
+- [ ] The spec lists the command used to run relevant tests (for example, `pytest`).

@@ -31,7 +31,20 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- `Spec-Driven First`: Plan references approved spec sections and preserves
+  `Specify -> Plan -> Tasks -> Implement` sequencing.
+- `AI-Generated Implementation Only`: Delivery approach uses approved agentic flow;
+  no manual feature coding path is proposed.
+- `Phase-Gated Evolution`: Feature scope maps to one explicit hackathon phase and
+  does not skip prerequisites from earlier phases.
+- `Traceability and Evidence`: Plan defines how requirements map to tasks and
+  validation artifacts (tests/checks, demo evidence, deployment evidence).
+- `TDD with Pytest`: For Python scope, plan defines `pytest` Red-Green-Refactor flow,
+  test locations, and execution command used before merge.
+- `Security and Isolation`: For authenticated flows, plan includes user isolation,
+  JWT verification path, and secret-handling approach.
+- `Cloud-Native Portability`: For Phases IV-V, plan includes Kubernetes manifests/
+  Helm and config-driven integrations (for example, Dapr components).
 
 ## Project Structure
 
