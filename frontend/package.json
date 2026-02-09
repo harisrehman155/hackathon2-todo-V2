@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@openai/chatkit-react": "^1.4.3",
     "@tailwindcss/postcss": "^4.1.18",
     "better-auth": "^1.4.18",
     "better-sqlite3": "^12.6.2",

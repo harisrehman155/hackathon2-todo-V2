@@ -10,6 +10,8 @@ dependencies = [
   "pyjwt>=2.10.1",
   "psycopg[binary]>=3.3.2",
   "python-dotenv>=1.2.0",
+  "openai-agents>=0.8.1",
+  "mcp[cli]>=1.26.0",
 ]
 
 [dependency-groups]

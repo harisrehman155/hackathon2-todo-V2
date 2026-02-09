@@ -103,3 +103,55 @@
    - [ ] Light mode text contrast >= 4.5:1
    - [ ] Responsive on mobile and desktop
    - [ ] Loading and error states implemented
+
+## Phase III: AI Chatbot (branch: 001-phase3-todo-ai-chatbot)
+
+### New Backend Dependencies
+- `openai-agents` — OpenAI Agents SDK (`from agents import Agent, Runner`)
+- `mcp[cli]` — MCP SDK (`from mcp.server.fastmcp import FastMCP`)
+- Install: `cd backend && uv add openai-agents "mcp[cli]"`
+
+### New Frontend Dependencies
+- `@openai/chatkit-react` — ChatKit React component
+- Install: `cd frontend && npm install @openai/chatkit-react --legacy-peer-deps`
+
+### Phase III Architecture
+- **Chat endpoint**: `POST /api/chat` (message + optional conversation_id → response + conversation_id)
+- **MCP Server**: `backend/src/mcp/server.py` — 5 tools (add_task, list_tasks, complete_task, delete_task, update_task)
+- **MCP transport**: stdio — runs as subprocess via `MCPServerStdio` from `agents.mcp`
+- **Agent**: `Agent(name=..., instructions=..., mcp_servers=[server], model="gpt-4o-mini")`
+- **Execution**: `result = await Runner.run(agent, messages)` → `result.final_output`
+- **User isolation in MCP**: user_id passed as tool parameter (cross-process, no shared auth state)
+- **ChatKit mode**: Self-hosted (NOT hosted — hosted talks directly to OpenAI, cannot route to custom backend)
+- **ChatKit proxy**: Next.js API route at `/api/chatkit` translates OpenAI format ↔ custom `POST /api/chat`
+- **Stateless**: All conversation state in DB (conversation + message tables), reconstructed per request
+
+### Phase III New Tables
+- `conversation`: id (UUID PK), owner_user_id (indexed), created_at
+- `message`: id (int PK), conversation_id (FK), role ("user"/"assistant"), content, created_at
+- Auto-created via `SQLModel.metadata.create_all()` — new models must be imported in `backend/src/db/models/__init__.py`
+
+### Phase III Environment Variables
+| Var | Location | Purpose |
+|-----|----------|---------|
+| `OPENAI_API_KEY` | `backend/.env` | OpenAI API key for Agents SDK |
+| `NEXT_PUBLIC_CHATKIT_API_DOMAIN_KEY` | `frontend/.env.local` | ChatKit domain key (use `domain_pk_localhost_dev` for local dev) |
+
+### Phase III New Files
+```
+backend/src/mcp/__init__.py, server.py          # MCP server with 5 todo tools
+backend/src/api/routes/chat.py                   # POST /api/chat endpoint
+backend/src/services/chat_service.py             # Agent orchestration + conversation mgmt
+backend/src/db/models/conversation.py, message.py # New SQLModels
+backend/src/schemas/chat.py                      # ChatRequest, ChatResponse
+frontend/src/app/api/chatkit/route.ts            # ChatKit proxy to FastAPI
+frontend/src/app/chat/page.tsx                   # Chat page with ChatKit UI
+frontend/src/lib/api/chat.ts                     # Chat API client helpers
+```
+
+### Phase III SDD Progress
+- [x] Specify (spec.md)
+- [x] Clarify (5 questions resolved)
+- [x] Plan (plan.md + research.md + data-model.md + contracts/ + quickstart.md)
+- [x] Tasks (tasks.md — 36 tasks, 7 phases, 4 user stories)
+- [ ] Implement (next: /sp.implement)
