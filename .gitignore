@@ -1,3 +1,4 @@
+# Python
 __pycache__/
 *.pyc
 .venv/
@@ -7,10 +8,37 @@ dist/
 .pytest_cache/
 .mypy_cache/
 
+# Node
+node_modules/
+.next/
+.turbo/
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# OS
 .DS_Store
 Thumbs.db
 *.tmp
 *.swp
+
+# IDE
 .vscode/
 .idea/
 
+# Embedded git repos in skills (avoid submodule issues)
+.codex/skills/ui-ux-pro-max/
+.claude/skills/ui-ux-pro-max/
+
+# Lock files (keep uv.lock, ignore package-lock)
+frontend/package-lock.json

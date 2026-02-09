@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  --font-heading: "Space Grotesk", sans-serif;
+  --font-body: "Source Sans 3", sans-serif;
+
+  --color-surface: #ffffff;
+  --color-surface-glass: rgba(255, 255, 255, 0.7);
+  --color-surface-glass-strong: rgba(255, 255, 255, 0.85);
+  --color-border-glass: rgba(255, 255, 255, 0.2);
+  --color-border-subtle: rgba(209, 213, 219, 0.5);
+
+  --color-text-primary: #15221d;
+  --color-text-muted: #5e6f66;
+
+  --color-teal: #0f9d8a;
+  --color-teal-hover: #0b7f70;
+  --color-teal-light: #cdeee8;
+  --color-danger: #b63a2b;
+  --color-danger-hover: #9a3023;
+  --color-warning-bg: #fbf0bf;
+  --color-warning-text: #866d13;
+  --color-success-bg: #cdeee8;
+  --color-success-text: #0a5f53;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    background: linear-gradient(135deg, #f0f4f8 0%, #e8f0ec 50%, #f6f7f4 100%);
+    color: var(--color-text-primary);
+    min-height: 100vh;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
