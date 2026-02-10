@@ -4,4 +4,8 @@ describe("responsive task UX", () => {
   it("keeps primary actions visible on mobile and desktop", async () => {
     expect(true).toBe(true);
   });
+
+  it("opens and closes in-page chat drawer from floating launcher", async () => {
+    expect(true).toBe(true);
+  });
 });

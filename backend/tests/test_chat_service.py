@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 import pytest
+import logging
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from src.db.models.conversation import Conversation
@@ -18,6 +19,18 @@ class DummyMCP:
 
     async def __aexit__(self, exc_type, exc, tb):
         return False
+
+
+class DummyMCPExitRaises:
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        raise RuntimeError("cleanup failure")
 
 
 @pytest.fixture
@@ -200,3 +213,51 @@ async def test_agent_instructions_include_user_id_context(engine, monkeypatch):
         await service.process_message("user-xyz", "list tasks", None, session)
 
     assert "user-xyz" in captured["instructions"]
+
+
+@pytest.mark.anyio
+async def test_cleanup_error_after_successful_run_is_ignored(engine, monkeypatch):
+    async def fake_run(agent, messages):
+        return SimpleNamespace(final_output="Task 'Buy milk' has been created.")
+
+    monkeypatch.setattr("src.services.chat_service.MCPServerStdio", DummyMCPExitRaises)
+    monkeypatch.setattr("src.services.chat_service.Runner.run", fake_run)
+
+    service = ChatService()
+    with Session(engine) as session:
+        result = await service.process_message("user-a", "add task", None, session)
+
+        stored = list(
+            session.exec(
+                select(Message)
+                .where(Message.conversation_id == result["conversation_id"])
+                .order_by(Message.created_at, Message.id)
+            )
+        )
+
+    assert "has been created" in result["response"]
+    assert len(stored) == 2
+    assert stored[1].role == "assistant"
+
+
+@pytest.mark.anyio
+async def test_chat_observability_log_emits_formatted_block(engine, monkeypatch, caplog):
+    async def fake_run(agent, messages):
+        return SimpleNamespace(
+            final_output="Task 'Buy milk' has been created.",
+            usage={"input_tokens": 120, "output_tokens": 42, "total_tokens": 162},
+            new_items=[],
+        )
+
+    monkeypatch.setattr("src.services.chat_service.MCPServerStdio", DummyMCP)
+    monkeypatch.setattr("src.services.chat_service.Runner.run", fake_run)
+
+    service = ChatService()
+    caplog.set_level(logging.INFO, logger="src.services.chat_service")
+
+    with Session(engine) as session:
+        await service.process_message("user-a", "add task", None, session)
+
+    assert "CHAT OBSERVABILITY" in caplog.text
+    assert "outcome         : success" in caplog.text
+    assert "model           : gpt-4o-mini" in caplog.text

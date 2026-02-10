@@ -27,7 +27,7 @@ export function TaskStates({ loading, error, empty, onRetry }: TaskStatesProps) 
         {onRetry && (
           <button
             onClick={onRetry}
-            className="px-4 py-2 rounded-xl bg-teal text-white text-sm font-semibold cursor-pointer hover:bg-teal-hover transition-colors duration-200 min-h-[44px]"
+            className="px-4 py-2 rounded-xl bg-teal text-slate-950 text-sm font-semibold cursor-pointer hover:bg-teal-hover transition-colors duration-200 min-h-[44px]"
           >
             Try Again
           </button>

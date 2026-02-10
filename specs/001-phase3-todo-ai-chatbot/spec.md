@@ -319,3 +319,41 @@ Working chatbot that can:
 - Q: How should the system handle OpenAI API failures during a chat request? → A: Return user-friendly error, keep user message persisted; user retries manually.
 - Q: Should the ChatKit frontend use hosted mode or self-hosted mode? → A: Hosted mode — OpenAI-hosted widget with domain allowlist configuration.
 - Q: What is the maximum message content size per chat request? → A: 2000 characters.
+
+## UI Redesign Addendum (2026-02-09)
+
+### Governance Exception (Current Branch)
+
+- This repo run applies a documented exception to continue on `001-phase3-todo-ai-chatbot` for a Phase III UI redesign increment.
+- Exception scope is frontend UX only and preserves Phase III backend/API contracts.
+- SDD order for this increment remains enforced inside this branch: `Specify -> Plan -> Tasks -> Implement`.
+
+### User Story 5 - Unified Task Board + In-Page Chat (Priority: P1)
+
+As an authenticated user, I can manage pending/completed tasks and chat with the assistant from the same `/tasks` page using a dark neon glass interface.
+
+**Independent Test**: Open `/tasks`, create task via modal, toggle status and delete from cards, open chatbot drawer from launcher, send message, and receive response without leaving page.
+
+**Acceptance Scenarios**:
+
+1. **Given** I am on `/tasks`, **When** I open the floating plus button, submit title and optional description, **Then** a new task is created with pending state by default.
+2. **Given** I have tasks, **When** `/tasks` renders, **Then** only two groups are shown: pending and completed.
+3. **Given** a task card is visible, **When** I use the single status action, **Then** the task toggles between pending and completed and the card updates in-place.
+4. **Given** a task card is visible, **When** I press delete, **Then** the task is removed from the board.
+5. **Given** I am on `/tasks`, **When** I press the chatbot icon launcher, **Then** a modern chat drawer opens on the same screen and can be closed without navigation.
+6. **Given** I send chat messages from the drawer, **When** the assistant responds, **Then** conversation continues using persisted `conversation_id` for the signed-in user.
+7. **Given** I visit `/chat`, **When** the route loads, **Then** it redirects to `/tasks` and no separate chat UI is presented.
+
+### Additional Functional Requirements
+
+- **FR-016**: Frontend MUST provide a floating task-create trigger that opens a themed modal with fields `title` (required) and `description` (optional); created tasks default to pending.
+- **FR-017**: Frontend task board MUST present tasks in two groups only: pending and completed.
+- **FR-018**: Frontend MUST include a floating chatbot launcher that opens a same-page chat drawer using existing `POST /api/chat`.
+- **FR-019**: Frontend MUST persist `conversation_id` in browser storage keyed by authenticated user identity to support reload continuity.
+- **FR-020**: Route `/chat` MUST redirect to `/tasks`.
+
+### Additional Success Criteria
+
+- **SC-007**: 100% of task creation from modal results in pending status without extra user selection.
+- **SC-008**: 100% of chat interactions for this UI path occur within `/tasks` without navigation to dedicated chat page.
+- **SC-009**: Chat conversation continuity remains functional after browser reload for the same authenticated user.

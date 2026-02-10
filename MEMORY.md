@@ -57,3 +57,30 @@ Use this structure for each new entry:
 - Evidence (files/tests/commands): backend/src/services/chat_service.py; uv run pytest tests/test_chat_service.py tests/test_chat_api.py -q (15 passed); live TestClient POST /api/chat result.
 - Blockers: OPENAI_API_KEY placeholder prevents successful assistant response.
 - Next: User to provide real OPENAI_API_KEY (and optional prod ChatKit key) for full live E2E success.
+
+### 2026-02-10 00:12 (local)
+- Branch: 001-phase3-todo-ai-chatbot
+- Feature folder: specs/001-phase3-todo-ai-chatbot/
+- SDD step: Implement (US5 UI redesign addendum)
+- Completed: Added governance exception + US5 scope in spec/tasks; generated persisted ui-ux-pro-max design system; redesigned `/tasks` into dark neon glass unified board with pending/completed columns, floating create-task modal, and in-page chat drawer; redirected `/chat` to `/tasks`.
+- Evidence (files/tests/commands): specs/001-phase3-todo-ai-chatbot/spec.md; specs/001-phase3-todo-ai-chatbot/tasks.md; design-system/hackathon2-task+chat/MASTER.md; design-system/hackathon2-task+chat/pages/tasks.md; frontend/src/app/tasks/page.tsx; frontend/src/components/tasks/CreateTaskModal.tsx; frontend/src/components/chat/ChatDrawer.tsx; frontend/src/app/chat/page.tsx; `cd frontend && npm run test`; `cd frontend && npx next build`.
+- Blockers: T048 manual UX checklist not yet executed in-browser.
+- Next: Run manual UI checklist (375/768/1024/1440, modal flow, task toggle/delete, chat send/receive, refresh persistence), then close T048.
+
+### 2026-02-10 10:08 (local)
+- Branch: 001-phase3-todo-ai-chatbot
+- Feature folder: specs/001-phase3-todo-ai-chatbot/
+- SDD step: Implement bugfix validation
+- Completed: Fixed `/api/chat` false-500 behavior when MCP stdio cleanup raises after a successful tool run; added regression test for cleanup-exception path.
+- Evidence (files/tests/commands): `backend/src/services/chat_service.py`; `backend/tests/test_chat_service.py`; `cd backend && uv run pytest tests/test_chat_service.py tests/test_chat_api.py -q` (16 passed); `cd backend && uv run pytest tests/ -q` (32 passed).
+- Blockers: Live environment still requires valid OpenAI key and manual in-browser retest for duplicate-add scenario confirmation.
+- Next: Restart backend/frontend and retest chatbot command flow from `/tasks` using same account.
+
+### 2026-02-10 10:19 (local)
+- Branch: 001-phase3-todo-ai-chatbot
+- Feature folder: specs/001-phase3-todo-ai-chatbot/
+- SDD step: Implement observability enhancement
+- Completed: Added clearly formatted chat observability logs (request id, model, latency, token usage, estimated cost, tool calls, outcome/error) for each `/api/chat` request; added test validating log block emission.
+- Evidence (files/tests/commands): `backend/src/services/chat_service.py`; `backend/tests/test_chat_service.py`; `cd backend && uv run pytest tests/test_chat_service.py tests/test_chat_api.py -q` (17 passed); `cd backend && uv run pytest tests/ -q` (33 passed).
+- Blockers: Token/cost fields depend on SDK usage payload availability at runtime; may display `N/A` when unavailable.
+- Next: Run backend and send a real chat message to verify live terminal observability output.

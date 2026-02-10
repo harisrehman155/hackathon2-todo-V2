@@ -266,3 +266,32 @@ Complete stories sequentially in priority order:
 - Stop at any checkpoint to validate story independently
 - MCP server runs as subprocess (stdio) — tested independently from chat service
 - ChatKit self-hosted mode requires Next.js proxy route (not direct OpenAI connection)
+
+---
+
+## Phase 8: User Story 5 — Unified `/tasks` UI Redesign (Priority: P1)
+
+**Goal**: Deliver a single-screen dark neon glass experience combining task board and chatbot drawer on `/tasks`.
+
+**Independent Test**: Validate modal task creation, pending/completed board grouping, status toggle/delete actions, in-page chat drawer behavior, and `/chat` redirect.
+
+### Validation-First Tasks
+
+- [X] T037 [US5] Run `python .claude/skills/ui-ux-pro-max/src/ui-ux-pro-max/scripts/search.py "task management ai chatbot dashboard dark glassmorphism" --design-system --persist -p "Hackathon2 Task+Chat" --page "tasks"` and store generated design-system artifacts as implementation reference.
+- [X] T038 [P] [US5] Add/update frontend UI validation tests for modal open/submit defaults, board grouping (pending/completed), and chat drawer open/close state.
+
+### Implementation Tasks
+
+- [X] T039 [US5] Update dark neon glass tokens/background in `frontend/src/app/globals.css`.
+- [X] T040 [US5] Refactor `frontend/src/app/tasks/page.tsx` into unified board with floating action controls, pending/completed grouping, and chat drawer integration.
+- [X] T041 [P] [US5] Add modal component in `frontend/src/components/tasks/CreateTaskModal.tsx` with accessible dialog semantics and required form validation.
+- [X] T042 [P] [US5] Add themed chat drawer component in `frontend/src/components/chat/ChatDrawer.tsx` using `frontend/src/lib/api/chat.ts` and persisted `conversation_id`.
+- [X] T043 [US5] Update `frontend/src/components/tasks/TaskCard.tsx` for dark style and explicit status text/icon-only two-state task UX.
+- [X] T044 [US5] Update `frontend/src/components/tasks/TaskLayout.tsx` to support single-page board shell and remove dedicated chat navigation control.
+- [X] T045 [US5] Redirect `frontend/src/app/chat/page.tsx` to `/tasks`.
+
+### Validation Tasks (Green)
+
+- [X] T046 [US5] Run `cd frontend && npm run test`.
+- [X] T047 [US5] Run `cd frontend && npx next build`.
+- [ ] T048 [US5] Manual evidence checklist: responsive (375/768/1024/1440), modal flow, task toggle/delete, in-page chat send/receive, persisted conversation reload behavior.

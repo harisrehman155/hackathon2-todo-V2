@@ -1,27 +1,21 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 
+import { ChatDrawer } from "@/components/chat/ChatDrawer";
+import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskLayout } from "@/components/tasks/TaskLayout";
 import { TaskStates } from "@/components/tasks/TaskStates";
-import { TaskCard } from "@/components/tasks/TaskCard";
-import {
-  listTasks,
-  createTask,
-  toggleTask,
-  deleteTask,
-  Task,
-} from "@/lib/api/tasks";
+import { CreateTaskModal } from "@/components/tasks/CreateTaskModal";
+import { createTask, deleteTask, listTasks, Task, toggleTask } from "@/lib/api/tasks";
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -29,10 +23,8 @@ export default function TasksPage() {
     try {
       const data = await listTasks();
       setTasks(data);
-    } catch (err) {
-      setPageError(
-        err instanceof Error ? err.message : "Failed to load tasks"
-      );
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : "Failed to load tasks");
     } finally {
       setLoading(false);
     }
@@ -42,120 +34,49 @@ export default function TasksPage() {
     fetchTasks();
   }, [fetchTasks]);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    const trimmed = title.trim();
-    if (!trimmed) {
-      setFormError("Title is required.");
-      return;
-    }
+  const pendingTasks = useMemo(() => tasks.filter((task) => !task.is_completed), [tasks]);
+  const completedTasks = useMemo(() => tasks.filter((task) => task.is_completed), [tasks]);
 
-    setFormError(null);
+  async function handleCreateTask(payload: { title: string; description?: string }) {
     setSubmitting(true);
     try {
-      const newTask = await createTask({
-        title: trimmed,
-        description: description.trim() || undefined,
-      });
+      const newTask = await createTask(payload);
       setTasks((prev) => [...prev, newTask]);
-      setTitle("");
-      setDescription("");
-    } catch (err) {
-      setFormError(
-        err instanceof Error ? err.message : "Failed to create task"
-      );
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function handleToggle(id: number) {
+  async function handleToggleTask(id: number) {
     try {
       const updated = await toggleTask(id);
-      setTasks((prev) =>
-        prev.map((t) => (t.id === id ? updated : t))
-      );
-    } catch (err) {
-      setPageError(
-        err instanceof Error ? err.message : "Failed to toggle task"
-      );
+      setTasks((prev) => prev.map((task) => (task.id === id ? updated : task)));
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : "Failed to update task");
     }
   }
 
-  async function handleDelete(id: number) {
+  async function handleDeleteTask(id: number) {
     try {
       await deleteTask(id);
-      setTasks((prev) => prev.filter((t) => t.id !== id));
-    } catch (err) {
-      setPageError(
-        err instanceof Error ? err.message : "Failed to delete task"
-      );
+      setTasks((prev) => prev.filter((task) => task.id !== id));
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : "Failed to delete task");
     }
   }
 
   return (
     <TaskLayout>
-      {/* Create Task Form */}
-      <section className="bg-white/70 backdrop-blur-lg rounded-xl border border-white/20 shadow-lg shadow-black/5 p-5">
-        <h2 className="text-lg font-bold font-heading text-text-primary mb-4">
-          New Task
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="task-title"
-              className="block text-sm font-semibold text-text-primary mb-1.5"
-            >
-              Title
-            </label>
-            <input
-              id="task-title"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="What needs to be done?"
-              className="w-full px-4 py-3 rounded-xl bg-white/80 border border-border-subtle focus:border-teal focus:ring-2 focus:ring-teal/20 outline-none transition-colors duration-200 text-text-primary placeholder:text-text-muted/50"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="task-desc"
-              className="block text-sm font-semibold text-text-primary mb-1.5"
-            >
-              Description
-            </label>
-            <textarea
-              id="task-desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional details..."
-              rows={3}
-              className="w-full px-4 py-3 rounded-xl bg-white/80 border border-border-subtle focus:border-teal focus:ring-2 focus:ring-teal/20 outline-none transition-colors duration-200 text-text-primary placeholder:text-text-muted/50 resize-none"
-            />
-          </div>
+      <section className="relative overflow-hidden rounded-3xl border border-border-glass bg-surface-glass p-4 sm:p-5 lg:p-6 backdrop-blur-2xl shadow-2xl shadow-black/40">
+        <div className="pointer-events-none absolute -top-24 left-1/3 h-44 w-44 rounded-full bg-cyan-400/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 right-12 h-44 w-44 rounded-full bg-red-400/20 blur-3xl" />
 
-          {formError && (
-            <p className="text-sm text-danger font-medium" role="alert">
-              {formError}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-teal text-white font-bold text-sm cursor-pointer hover:bg-teal-hover focus:ring-2 focus:ring-teal/20 focus:outline-none transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
-          >
-            <Plus className="w-4 h-4" />
-            {submitting ? "Adding..." : "Add Task"}
-          </button>
-        </form>
-      </section>
-
-      {/* Task List */}
-      <section className="bg-white/70 backdrop-blur-lg rounded-xl border border-white/20 shadow-lg shadow-black/5 p-5">
-        <h2 className="text-lg font-bold font-heading text-text-primary mb-4">
-          Your Tasks
-        </h2>
+        <header className="relative mb-4 sm:mb-5">
+          <h2 className="text-xl sm:text-2xl font-bold font-heading text-text-primary">Active Tasks</h2>
+          <p className="text-sm text-text-muted mt-1">
+            Manage all work from one board and use the assistant from the chat launcher.
+          </p>
+        </header>
 
         <TaskStates
           loading={loading}
@@ -164,17 +85,80 @@ export default function TasksPage() {
           onRetry={fetchTasks}
         />
 
-        <div className="space-y-3" aria-live="polite">
-          {tasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onToggle={handleToggle}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
+        {!loading && !pageError && tasks.length > 0 && (
+          <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+            <section className="rounded-2xl border border-border-glass bg-slate-950/35 p-3 sm:p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base font-semibold font-heading text-text-primary inline-flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 rounded-full bg-amber-400" />
+                  Pending
+                </h3>
+                <span className="text-xs px-2 py-1 rounded-full bg-warning-bg text-warning-text font-semibold">
+                  {pendingTasks.length}
+                </span>
+              </div>
+              <div className="space-y-3" aria-live="polite">
+                {pendingTasks.length > 0 ? (
+                  pendingTasks.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onToggle={handleToggleTask}
+                      onDelete={handleDeleteTask}
+                    />
+                  ))
+                ) : (
+                  <p className="text-sm text-text-muted">No pending tasks.</p>
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-border-glass bg-slate-950/35 p-3 sm:p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base font-semibold font-heading text-text-primary inline-flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
+                  Completed
+                </h3>
+                <span className="text-xs px-2 py-1 rounded-full bg-success-bg text-success-text font-semibold">
+                  {completedTasks.length}
+                </span>
+              </div>
+              <div className="space-y-3" aria-live="polite">
+                {completedTasks.length > 0 ? (
+                  completedTasks.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onToggle={handleToggleTask}
+                      onDelete={handleDeleteTask}
+                    />
+                  ))
+                ) : (
+                  <p className="text-sm text-text-muted">No completed tasks yet.</p>
+                )}
+              </div>
+            </section>
+          </div>
+        )}
       </section>
+
+      <button
+        type="button"
+        onClick={() => setShowCreateModal(true)}
+        aria-label="Create task"
+        className="fixed z-40 bottom-24 right-6 sm:bottom-8 sm:right-28 inline-flex items-center justify-center w-14 h-14 rounded-full border border-teal/45 bg-surface-glass-strong backdrop-blur-xl text-teal shadow-lg shadow-teal/25 hover:bg-teal hover:text-slate-950 transition-colors duration-200 cursor-pointer min-h-[44px] min-w-[44px]"
+      >
+        <Plus className="w-6 h-6" />
+      </button>
+
+      <CreateTaskModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateTask}
+        loading={submitting}
+      />
+
+      <ChatDrawer />
     </TaskLayout>
   );
 }

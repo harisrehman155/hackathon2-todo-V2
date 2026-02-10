@@ -11,12 +11,12 @@ type TaskCardProps = {
 
 export function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
   return (
-    <article className="bg-white/70 backdrop-blur-lg rounded-xl border border-white/20 shadow-lg shadow-black/5 p-4 transition-all duration-200 hover:shadow-xl hover:shadow-black/8">
+    <article className="bg-surface-glass border border-border-glass backdrop-blur-xl rounded-2xl p-4 transition-colors duration-200 hover:border-teal/40">
       <header className="flex items-start justify-between gap-3 mb-2">
         <h2
           className={`text-base font-semibold font-heading leading-snug ${
             task.is_completed
-              ? "line-through text-text-muted"
+              ? "line-through text-slate-400"
               : "text-text-primary"
           }`}
         >
@@ -31,7 +31,7 @@ export function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
         >
           {task.is_completed ? (
             <>
-              <Check className="w-3 h-3" /> Done
+              <Check className="w-3 h-3" /> Completed
             </>
           ) : (
             <>
@@ -49,22 +49,24 @@ export function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
 
       <div className="flex items-center gap-2 mt-3">
         <button
+          type="button"
           onClick={() => onToggle(task.id)}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-teal text-white text-sm font-semibold cursor-pointer hover:bg-teal-hover transition-colors duration-200 min-h-[44px]"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-teal text-slate-950 text-sm font-semibold cursor-pointer hover:bg-teal-hover transition-colors duration-200 min-h-[44px]"
         >
           {task.is_completed ? (
             <>
-              <Circle className="w-4 h-4" /> Undo
+              <Circle className="w-4 h-4" /> Mark Pending
             </>
           ) : (
             <>
-              <Check className="w-4 h-4" /> Complete
+              <Check className="w-4 h-4" /> Mark Complete
             </>
           )}
         </button>
         <button
+          type="button"
           onClick={() => onDelete(task.id)}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-danger text-white text-sm font-semibold cursor-pointer hover:bg-danger-hover transition-colors duration-200 min-h-[44px]"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-danger text-slate-950 text-sm font-semibold cursor-pointer hover:bg-danger-hover transition-colors duration-200 min-h-[44px]"
         >
           <Trash2 className="w-4 h-4" /> Delete
         </button>
