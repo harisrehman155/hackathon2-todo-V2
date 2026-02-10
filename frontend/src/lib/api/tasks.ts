@@ -1,4 +1,5 @@
 import { authClient } from "@/lib/auth";
+import { forceLogoutForExpiredSession, isAuthenticationFailure } from "@/lib/api/session";
 
 export type TaskPayload = {
   title: string;
@@ -26,7 +27,8 @@ async function getToken(): Promise<string> {
     }
     if (attempt < 2) await new Promise((r) => setTimeout(r, 1000));
   }
-  throw new Error("Unable to get auth token. Please sign in again.");
+  await forceLogoutForExpiredSession();
+  throw new Error("Session expired. Redirecting to sign in.");
 }
 
 async function request<T = unknown>(
@@ -47,6 +49,10 @@ async function request<T = unknown>(
 
   if (!response.ok) {
     const body = await response.json().catch(() => null);
+    if (isAuthenticationFailure(response.status, body)) {
+      await forceLogoutForExpiredSession();
+      throw new Error("Session expired. Redirecting to sign in.");
+    }
     const message =
       body?.detail?.error ?? body?.detail ?? `API request failed: ${response.status}`;
     throw new Error(message);

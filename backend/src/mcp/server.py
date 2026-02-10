@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from sqlmodel import Session, select
 
 from mcp.server.fastmcp import FastMCP
@@ -13,6 +15,7 @@ def _get_settings():
     return get_settings()
 
 
+@lru_cache(maxsize=1)
 def _get_engine():
     engine = make_engine(_get_settings())
     init_db(engine)

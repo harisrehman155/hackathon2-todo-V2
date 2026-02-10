@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
+import { toast } from "react-toastify";
 
 import { ChatDrawer } from "@/components/chat/ChatDrawer";
 import { TaskCard } from "@/components/tasks/TaskCard";
@@ -42,6 +43,13 @@ export default function TasksPage() {
     try {
       const newTask = await createTask(payload);
       setTasks((prev) => [...prev, newTask]);
+      toast.success("Task created.");
+      setShowCreateModal(false);
+      setPageError(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create task";
+      setPageError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -51,8 +59,11 @@ export default function TasksPage() {
     try {
       const updated = await toggleTask(id);
       setTasks((prev) => prev.map((task) => (task.id === id ? updated : task)));
+      setPageError(null);
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Failed to update task");
+      const message = error instanceof Error ? error.message : "Failed to update task";
+      setPageError(message);
+      toast.error(message);
     }
   }
 
@@ -60,9 +71,16 @@ export default function TasksPage() {
     try {
       await deleteTask(id);
       setTasks((prev) => prev.filter((task) => task.id !== id));
+      setPageError(null);
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Failed to delete task");
+      const message = error instanceof Error ? error.message : "Failed to delete task";
+      setPageError(message);
+      toast.error(message);
     }
+  }
+
+  async function handleChatTaskAction(_toolNames: string[]) {
+    await fetchTasks();
   }
 
   return (
@@ -77,7 +95,6 @@ export default function TasksPage() {
             Manage all work from one board and use the assistant from the chat launcher.
           </p>
         </header>
-
         <TaskStates
           loading={loading}
           error={pageError}
@@ -158,7 +175,7 @@ export default function TasksPage() {
         loading={submitting}
       />
 
-      <ChatDrawer />
+      <ChatDrawer onTaskAction={handleChatTaskAction} />
     </TaskLayout>
   );
 }

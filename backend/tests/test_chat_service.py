@@ -33,6 +33,11 @@ class DummyMCPExitRaises:
         raise RuntimeError("cleanup failure")
 
 
+class DummyToolCallItem:
+    def __init__(self, tool_name: str):
+        self.raw_item = SimpleNamespace(name=tool_name)
+
+
 @pytest.fixture
 def engine():
     test_engine = create_engine("sqlite://")
@@ -44,7 +49,7 @@ def engine():
 def patch_runner(monkeypatch):
     captured = {"messages": None}
 
-    async def fake_run(agent, messages):
+    async def fake_run(agent, messages, **kwargs):
         captured["messages"] = messages
         return SimpleNamespace(final_output="assistant reply")
 
@@ -140,7 +145,7 @@ async def test_conversation_ownership_rejects_wrong_user(engine, patch_runner):
 
 @pytest.mark.anyio
 async def test_successful_actions_include_confirmation_text(engine, monkeypatch):
-    async def fake_run(agent, messages):
+    async def fake_run(agent, messages, **kwargs):
         return SimpleNamespace(final_output="Task 'Buy milk' has been created.")
 
     monkeypatch.setattr("src.services.chat_service.MCPServerStdio", DummyMCP)
@@ -155,7 +160,7 @@ async def test_successful_actions_include_confirmation_text(engine, monkeypatch)
 
 @pytest.mark.anyio
 async def test_non_existent_task_returns_helpful_error_text(engine, monkeypatch):
-    async def fake_run(agent, messages):
+    async def fake_run(agent, messages, **kwargs):
         return SimpleNamespace(final_output="Task not found. Please provide a valid task id.")
 
     monkeypatch.setattr("src.services.chat_service.MCPServerStdio", DummyMCP)
@@ -171,7 +176,7 @@ async def test_non_existent_task_returns_helpful_error_text(engine, monkeypatch)
 
 @pytest.mark.anyio
 async def test_openai_failure_returns_user_friendly_error_and_persists_user_message(engine, monkeypatch):
-    async def failing_run(agent, messages):
+    async def failing_run(agent, messages, **kwargs):
         raise RuntimeError("OpenAI timeout")
 
     monkeypatch.setattr("src.services.chat_service.MCPServerStdio", DummyMCP)
@@ -201,7 +206,7 @@ async def test_openai_failure_returns_user_friendly_error_and_persists_user_mess
 async def test_agent_instructions_include_user_id_context(engine, monkeypatch):
     captured = {}
 
-    async def fake_run(agent, messages):
+    async def fake_run(agent, messages, **kwargs):
         captured["instructions"] = agent.instructions
         return SimpleNamespace(final_output="ok")
 
@@ -216,8 +221,88 @@ async def test_agent_instructions_include_user_id_context(engine, monkeypatch):
 
 
 @pytest.mark.anyio
+async def test_agent_instructions_enforce_task_tool_workflow(engine, monkeypatch):
+    captured = {}
+
+    async def fake_run(agent, messages, **kwargs):
+        captured["instructions"] = agent.instructions
+        return SimpleNamespace(final_output="ok")
+
+    monkeypatch.setattr("src.services.chat_service.MCPServerStdio", DummyMCP)
+    monkeypatch.setattr("src.services.chat_service.Runner.run", fake_run)
+
+    service = ChatService()
+    with Session(engine) as session:
+        await service.process_message("user-abc", "delete the meeting task", None, session)
+
+    instructions = captured["instructions"]
+    assert "Never claim a task mutation succeeded unless a tool returned success" in instructions
+    assert "Delete by name flow: first call list_tasks" in instructions
+    assert "Mark complete by title flow: first call list_tasks" in instructions
+
+
+@pytest.mark.anyio
+async def test_task_commands_require_tool_choice(engine, monkeypatch):
+    captured = {}
+
+    async def fake_run(agent, messages, **kwargs):
+        captured["agent"] = agent
+        return SimpleNamespace(final_output="ok")
+
+    monkeypatch.setattr("src.services.chat_service.MCPServerStdio", DummyMCP)
+    monkeypatch.setattr("src.services.chat_service.Runner.run", fake_run)
+
+    service = ChatService()
+    with Session(engine) as session:
+        await service.process_message("user-abc", "Add a task to buy groceries", None, session)
+
+    agent = captured["agent"]
+    assert agent.model_settings.tool_choice == "required"
+
+
+@pytest.mark.anyio
+async def test_non_task_messages_keep_auto_tool_choice(engine, monkeypatch):
+    captured = {}
+
+    async def fake_run(agent, messages, **kwargs):
+        captured["agent"] = agent
+        return SimpleNamespace(final_output="ok")
+
+    monkeypatch.setattr("src.services.chat_service.MCPServerStdio", DummyMCP)
+    monkeypatch.setattr("src.services.chat_service.Runner.run", fake_run)
+
+    service = ChatService()
+    with Session(engine) as session:
+        await service.process_message("user-abc", "Hello there", None, session)
+
+    agent = captured["agent"]
+    assert agent.model_settings.tool_choice == "auto"
+
+
+@pytest.mark.anyio
+async def test_runner_receives_tracing_api_key_from_settings(engine, monkeypatch):
+    captured = {}
+
+    async def fake_run(agent, messages, **kwargs):
+        captured["run_config"] = kwargs.get("run_config")
+        return SimpleNamespace(final_output="ok")
+
+    monkeypatch.setenv("OPENAI_API_KEY_TRACING", "trace-key-123")
+    monkeypatch.setattr("src.services.chat_service.MCPServerStdio", DummyMCP)
+    monkeypatch.setattr("src.services.chat_service.Runner.run", fake_run)
+
+    service = ChatService()
+    with Session(engine) as session:
+        await service.process_message("user-abc", "hello", None, session)
+
+    run_config = captured["run_config"]
+    assert run_config is not None
+    assert run_config.tracing == {"api_key": "trace-key-123"}
+
+
+@pytest.mark.anyio
 async def test_cleanup_error_after_successful_run_is_ignored(engine, monkeypatch):
-    async def fake_run(agent, messages):
+    async def fake_run(agent, messages, **kwargs):
         return SimpleNamespace(final_output="Task 'Buy milk' has been created.")
 
     monkeypatch.setattr("src.services.chat_service.MCPServerStdio", DummyMCPExitRaises)
@@ -242,7 +327,7 @@ async def test_cleanup_error_after_successful_run_is_ignored(engine, monkeypatch
 
 @pytest.mark.anyio
 async def test_chat_observability_log_emits_formatted_block(engine, monkeypatch, caplog):
-    async def fake_run(agent, messages):
+    async def fake_run(agent, messages, **kwargs):
         return SimpleNamespace(
             final_output="Task 'Buy milk' has been created.",
             usage={"input_tokens": 120, "output_tokens": 42, "total_tokens": 162},
@@ -258,6 +343,28 @@ async def test_chat_observability_log_emits_formatted_block(engine, monkeypatch,
     with Session(engine) as session:
         await service.process_message("user-a", "add task", None, session)
 
-    assert "CHAT OBSERVABILITY" in caplog.text
-    assert "outcome         : success" in caplog.text
-    assert "model           : gpt-4o-mini" in caplog.text
+    assert "CHAT_METRICS" in caplog.text
+    assert "model=gpt-4o-mini" in caplog.text
+    assert "tokens_in=120" in caplog.text
+    assert "tokens_out=42" in caplog.text
+
+
+@pytest.mark.anyio
+async def test_chat_response_includes_tool_names_from_raw_items(engine, monkeypatch):
+    async def fake_run(agent, messages, **kwargs):
+        return SimpleNamespace(
+            final_output="Task 'Buy milk' has been created.",
+            usage={"input_tokens": 10, "output_tokens": 5, "total_tokens": 15},
+            new_items=[DummyToolCallItem("add_task")],
+        )
+
+    monkeypatch.setattr("src.services.chat_service.MCPServerStdio", DummyMCP)
+    monkeypatch.setattr("src.services.chat_service.Runner.run", fake_run)
+
+    service = ChatService()
+    with Session(engine) as session:
+        result = await service.process_message("user-a", "add task", None, session)
+
+    assert result["tool_count"] == 1
+    assert result["tool_names"] == ["add_task"]
+

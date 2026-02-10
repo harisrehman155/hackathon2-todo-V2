@@ -1,4 +1,5 @@
 import { authClient } from "@/lib/auth";
+import { forceLogoutForExpiredSession, isAuthenticationFailure } from "@/lib/api/session";
 
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -10,12 +11,15 @@ export type ChatRequest = {
 export type ChatResponse = {
   response: string;
   conversation_id: string;
+  tool_count?: number;
+  tool_names?: string[];
 };
 
 async function getToken(): Promise<string> {
   const { data } = await authClient.token();
   if (!data?.token) {
-    throw new Error("Unable to get auth token. Please sign in again.");
+    await forceLogoutForExpiredSession();
+    throw new Error("Session expired. Redirecting to sign in.");
   }
   return data.token;
 }
@@ -33,6 +37,10 @@ export async function sendChatMessage(payload: ChatRequest): Promise<ChatRespons
 
   const body = await response.json().catch(() => null);
   if (!response.ok) {
+    if (isAuthenticationFailure(response.status, body)) {
+      await forceLogoutForExpiredSession();
+      throw new Error("Session expired. Redirecting to sign in.");
+    }
     const message = body?.detail?.error ?? body?.detail ?? `API request failed: ${response.status}`;
     throw new Error(message);
   }

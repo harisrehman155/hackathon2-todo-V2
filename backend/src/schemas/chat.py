@@ -11,6 +11,8 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     conversation_id: str
+    tool_count: int = 0
+    tool_names: list[str] = []
 
 
 class ChatErrorResponse(BaseModel):

@@ -12,6 +12,7 @@ load_dotenv(_env_file)
 class Settings:
     database_url: str
     openai_api_key: str
+    openai_api_key_tracing: str
     app_env: str
     jwt_secret: str
     jwt_algorithm: str
@@ -25,6 +26,7 @@ def get_settings() -> Settings:
     return Settings(
         database_url=os.getenv("DATABASE_URL", "sqlite:///./backend.db"),
         openai_api_key=os.getenv("OPENAI_API_KEY", ""),
+        openai_api_key_tracing=os.getenv("OPENAI_API_KEY_TRACING", ""),
         app_env=os.getenv("APP_ENV", "development"),
         jwt_secret=os.getenv("JWT_SECRET", "dev-secret"),
         jwt_algorithm=os.getenv("JWT_ALGORITHM", "HS256"),

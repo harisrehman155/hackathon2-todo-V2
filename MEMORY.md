@@ -84,3 +84,66 @@ Use this structure for each new entry:
 - Evidence (files/tests/commands): `backend/src/services/chat_service.py`; `backend/tests/test_chat_service.py`; `cd backend && uv run pytest tests/test_chat_service.py tests/test_chat_api.py -q` (17 passed); `cd backend && uv run pytest tests/ -q` (33 passed).
 - Blockers: Token/cost fields depend on SDK usage payload availability at runtime; may display `N/A` when unavailable.
 - Next: Run backend and send a real chat message to verify live terminal observability output.
+
+### 2026-02-10 10:30 (local)
+- Branch: 001-phase3-todo-ai-chatbot
+- Feature folder: specs/001-phase3-todo-ai-chatbot/
+- SDD step: Implement timeout/reliability fix
+- Completed: Increased MCP stdio client timeout/retry settings in chat service (30s, 1 retry) and cached MCP server DB engine initialization to avoid repeated cold-start overhead per tool call.
+- Evidence (files/tests/commands): `backend/src/services/chat_service.py`; `backend/src/mcp/server.py`; `cd backend && uv run pytest tests/test_chat_service.py tests/test_chat_api.py tests/test_mcp_tools.py -q` (18 passed); `cd backend && uv run pytest tests/ -q` (33 passed).
+- Blockers: Live retest still required against real OpenAI API and Neon latency conditions.
+- Next: Restart backend and verify that repeated add-task prompts no longer produce 5s MCP timeout errors.
+
+### 2026-02-10 10:56 (local)
+- Branch: 001-phase3-todo-ai-chatbot
+- Feature folder: specs/001-phase3-todo-ai-chatbot/
+- SDD step: Implement UX + logging refinement
+- Completed: Added backend chat response action metadata (`tool_count`, `tool_names`); chat drawer now shows alert on model task action, auto-closes drawer, and triggers task-board refresh so changes appear immediately without manual refresh; reduced chat observability logs to minimal single-line metrics (`model`, tool count+names, input/output tokens, cost).
+- Evidence (files/tests/commands): `backend/src/services/chat_service.py`; `backend/src/schemas/chat.py`; `backend/tests/test_chat_service.py`; `frontend/src/lib/api/chat.ts`; `frontend/src/components/chat/ChatDrawer.tsx`; `frontend/src/app/tasks/page.tsx`; `cd backend && uv run pytest tests/test_chat_service.py tests/test_chat_api.py -q` (17 passed); `cd frontend && npx vitest run` (6 passed); `cd frontend && npx next build` (pass).
+- Blockers: Alert UX currently uses browser `window.alert` per request; may be replaced with toast if desired.
+- Next: Run live `/tasks` chat flow and confirm desired alert + auto-close + immediate task refresh behavior.
+
+### 2026-02-10 11:12 (local)
+- Branch: 001-phase3-todo-ai-chatbot
+- Feature folder: specs/001-phase3-todo-ai-chatbot/
+- SDD step: Implement bugfix follow-up
+- Completed: Fixed tool-name extraction logic for OpenAI Agents run items to avoid `unknown_tool` false positives; improved usage extraction fallback from `raw_responses[*].usage`; ensured minimal metrics log output contains only requested fields.
+- Evidence (files/tests/commands): `backend/src/services/chat_service.py`; `backend/tests/test_chat_service.py`; `cd backend && uv run pytest tests/test_chat_service.py tests/test_chat_api.py -q` (18 passed); `cd backend && uv run pytest tests/ -q` (34 passed).
+- Blockers: Live runtime still needed to verify provider actually returns usage for each response (otherwise tokens/cost remain `N/A`).
+- Next: Re-run chatbot task actions in `/tasks` and confirm alerts now show concrete tool names.
+
+### 2026-02-10 13:31 (local)
+- Branch: 001-phase3-todo-ai-chatbot
+- Feature folder: specs/001-phase3-todo-ai-chatbot/
+- SDD step: Implement bugfix validation
+- Completed: Strengthened agent instructions to require MCP tool-backed task mutations (including list-first flows for title-based complete/delete); added regression test asserting instruction policy; replaced blocking chat success dialog with `react-toastify`; task board now auto-refreshes after every successful chat response.
+- Evidence (files/tests/commands): `backend/src/services/chat_service.py`; `backend/tests/test_chat_service.py`; `frontend/src/components/chat/ChatDrawer.tsx`; `frontend/src/app/tasks/page.tsx`; `frontend/src/app/layout.tsx`; `frontend/package.json`; `cd backend && uv run pytest tests/test_chat_service.py tests/test_mcp_tools.py tests/test_chat_api.py -q` (20 passed); `cd frontend && npm.cmd run test` (6 passed); `cd frontend && npx next build` (pass).
+- Blockers: Live OpenAI behavior still depends on real runtime model/tool-call outputs; automated checks validate instruction contract and local integration.
+- Next: Restart backend/frontend and run live `/tasks` chat prompts to confirm complete/delete behavior with your account data.
+
+### 2026-02-10 16:17 (local)
+- Branch: 001-phase3-todo-ai-chatbot
+- Feature folder: specs/001-phase3-todo-ai-chatbot/
+- SDD step: Implement reliability hardening
+- Completed: Added dynamic tool-choice enforcement (`tool_choice='required'`) for task-command messages so agent cannot answer task actions without MCP tool calls; added tests for required-vs-auto tool choice behavior; executed live ChatService call against OpenAI showing real tool invocation and DB mutation for add-task flow.
+- Evidence (files/tests/commands): `backend/src/services/chat_service.py`; `backend/tests/test_chat_service.py`; `cd backend && uv run pytest tests/test_chat_service.py tests/test_chat_api.py tests/test_mcp_tools.py -q` (22 passed); `cd backend && uv run pytest tests/ -q` (37 passed); live script output: `CHAT_RESPONSE Task 'buy groceries' has been created.` + `TOOL_COUNT 2` + `TOOL_NAMES ['add_task', 'unknown_tool']`.
+- Blockers: Existing running backend process must be restarted to load new ChatService logic.
+- Next: Restart backend, re-run user command set from `/tasks`, and verify logs no longer show `tools=0[none]` for task-action prompts.
+
+### 2026-02-10 16:31 (local)
+- Branch: 001-phase3-todo-ai-chatbot
+- Feature folder: specs/001-phase3-todo-ai-chatbot/
+- SDD step: Implement config/runtime update
+- Completed: Added `OPENAI_API_KEY_TRACING` support in backend settings and chat runtime environment wiring; updated `backend/.env` with provided tracing key.
+- Evidence (files/tests/commands): `backend/src/config.py`; `backend/src/services/chat_service.py`; `backend/.env`; `cd backend && uv run pytest tests/test_chat_service.py tests/test_chat_api.py -q` (21 passed).
+- Blockers: Backend process restart required to load updated env/config values.
+- Next: Restart backend and verify trace ingest calls continue successfully under the tracing key setup.
+
+### 2026-02-10 16:41 (local)
+- Branch: 001-phase3-todo-ai-chatbot
+- Feature folder: specs/001-phase3-todo-ai-chatbot/
+- SDD step: Implement tracing key fix
+- Completed: Confirmed openai-agents 0.8.1 requires per-run tracing config (not custom env var alone); updated chat service to call `Runner.run(..., run_config=RunConfig(tracing={\"api_key\": OPENAI_API_KEY_TRACING}))`; added regression test to assert tracing key is forwarded.
+- Evidence (files/tests/commands): `backend/src/services/chat_service.py`; `backend/tests/test_chat_service.py`; `cd backend && uv run pytest tests/test_chat_service.py tests/test_chat_api.py tests/test_mcp_tools.py -q` (23 passed); `cd backend && uv run pytest tests/ -q` (38 passed).
+- Blockers: Must restart backend process; traces appear in project bound to the tracing key, which may differ from currently selected dashboard project.
+- Next: Restart backend, send one `/api/chat` request, then verify Logs -> Traces in the tracing key’s project.

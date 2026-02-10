@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Loader2, MessageCircle, Send, X } from "lucide-react";
+import { toast } from "react-toastify";
 import { authClient } from "@/lib/auth";
 import { sendChatMessage } from "@/lib/api/chat";
 
@@ -11,7 +12,11 @@ type ChatMessage = {
   content: string;
 };
 
-export function ChatDrawer() {
+type ChatDrawerProps = {
+  onTaskAction?: (toolNames: string[]) => void | Promise<void>;
+};
+
+export function ChatDrawer({ onTaskAction }: ChatDrawerProps) {
   const { data: session } = authClient.useSession();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -82,10 +87,19 @@ export function ChatDrawer() {
           content: result.response,
         },
       ]);
+
+      const toolNames = (result.tool_names ?? []).filter((name) => name !== "unknown_tool");
+      await onTaskAction?.(toolNames);
+      if (toolNames.length > 0) {
+        toast.success(`AI updated tasks: ${toolNames.join(", ")}`);
+      } else {
+        toast.info("Assistant replied. Task board refreshed.");
+      }
     } catch (submitError) {
-      setError(
-        submitError instanceof Error ? submitError.message : "Unable to send chat message",
-      );
+      const message =
+        submitError instanceof Error ? submitError.message : "Unable to send chat message";
+      setError(message);
+      toast.error(message);
     } finally {
       setSending(false);
     }
@@ -167,11 +181,11 @@ export function ChatDrawer() {
                 </label>
                 <textarea
                   id="chat-input"
-                  rows={1}
+                  rows={4}
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
                   placeholder="Ask me to manage your tasks..."
-                  className="flex-1 px-3 py-2.5 rounded-xl bg-slate-950/60 border border-border-subtle text-text-primary placeholder:text-slate-400 focus:border-teal outline-none resize-none"
+                  className="flex-1 px-3 py-2.5 min-h-[110px] rounded-xl bg-slate-950/60 border border-border-subtle text-text-primary placeholder:text-slate-400 focus:border-teal outline-none resize-y"
                 />
                 <button
                   type="submit"
